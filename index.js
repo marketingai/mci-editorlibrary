@@ -72,7 +72,7 @@ SCACommunicator.prototype.fetchDemoData = function () {
 
 SCACommunicator.prototype.buildHTML = function (fieldData) {
   const fields = [];
-  this.message = ['Building the HTML fields'];
+  this.log.info.push('Building the HTML fields');
   for (let [key, {label, fieldHTML}] of Object.entries(fieldData)) {
     if (!fieldHTML) continue;
 
@@ -88,7 +88,7 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
         inputEle = document.createElement(ele);
         this.log.info.push(attributes);
         for (let [name, value] of Object.entries(attributes)) {
-          this.log.info.push(`${name}, ${value}`);
+          this.log.info.push([name, value]);
           if (name === 'option') {
             const option = document.createElement(name);
             option.textContent = value.$t;

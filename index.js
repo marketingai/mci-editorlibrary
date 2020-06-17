@@ -71,7 +71,7 @@ SCACommunicator.prototype.fetchDemoData = function () {
 
 SCACommunicator.prototype.buildHTML = function (fieldData) {
   const fields = [];
-  this.message = [...this.message, 'Building the HTML fields'];
+  this.message = ['Building the HTML fields'];
   for (let [key, {label, fieldHTML}] of Object.entries(fieldData)) {
     if (!fieldHTML) continue;
 

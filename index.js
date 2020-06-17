@@ -86,6 +86,7 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
     } else {
       for (let [ele, attributes] of Object.entries(fieldHTML)) {
         inputEle = document.createElement(ele);
+        this.log.info.push(attributes);
         for (let [name, value] of Object.entries(attributes)) {
           this.log.info.push(`${name}, ${value}`);
           if (name === 'option') {

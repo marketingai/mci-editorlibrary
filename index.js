@@ -93,10 +93,10 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
             option.textContent = value.$t;
             option.value = value.value;
             inputEle.append(option);
-            this.log.warn.push(option, inputEle);
           }
 
           inputEle.setAttribute(name, value);
+          this.log.warn.push(inputEle);
         }
       }
     }

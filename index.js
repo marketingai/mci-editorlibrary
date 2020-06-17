@@ -94,13 +94,10 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
                 const opt = document.createElement(name);
                 opt.textContent = option.$t;
                 opt.value = option.value;
-                inputEle.append(opt);
+                inputEle.appendChild(opt);
               }
             }
           }
-
-          inputEle.setAttribute(name, value);
-          this.log.warn.push(inputEle);
         }
       }
     }

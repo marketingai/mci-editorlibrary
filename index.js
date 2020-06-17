@@ -90,10 +90,10 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
           this.log.debug.push([name, value]);
           if (name === 'option') {
             const option = document.createElement(name);
-            this.log.warn.push(option);
             option.textContent = value.$t;
             option.value = value.value;
             inputEle.append(option);
+            this.log.warn.push(option, inputEle);
           }
 
           inputEle.setAttribute(name, value);

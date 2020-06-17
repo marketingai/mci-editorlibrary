@@ -25,6 +25,7 @@ SCACommunicator.prototype = {
 SCACommunicator.prototype.init = function () {
   this.jobRequestQueueHelper = this.queueCache('jobRequestQueue');
   this.jobResponseQueueHelper = this.queueCache('jobResponseQueue');
+  this.log = {info: [], warn: [], error: [], debug: []};
   this.fetchDemoData();
 
   this.HTMLFields = {};
@@ -86,12 +87,12 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
       for (let [ele, attributes] of Object.entries(fieldHTML)) {
         inputEle = document.createElement(ele);
         for (let [name, value] of Object.entries(attributes)) {
+          this.log.info.push(`${name}, ${value}`);
           if (name === 'option') {
             const option = document.createElement(name);
             option.textContent = value.$t;
             option.value = value.value;
             inputEle.append(option);
-            this.message.push('Building options');
           }
 
           inputEle.setAttribute(name, value);

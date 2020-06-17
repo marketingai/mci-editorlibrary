@@ -88,14 +88,16 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
         inputEle = document.createElement(ele);
         for (let [name, value] of Object.entries(attributes)) {
           this.log.debug.push([name, value]);
-          // if (name === 'option') {
-          //   for (let option of value) {
-          //     const opt = document.createElement(name);
-          //     opt.textContent = option.$t;
-          //     opt.value = option.value;
-          //     inputEle.append(opt);
-          //   }
-          // }
+          if (name === 'option') {
+            if (value.constructor.name === 'array') {
+              for (let option of value) {
+                const opt = document.createElement(name);
+                opt.textContent = option.$t;
+                opt.value = option.value;
+                inputEle.append(opt);
+              }
+            }
+          }
 
           inputEle.setAttribute(name, value);
           this.log.warn.push(inputEle);

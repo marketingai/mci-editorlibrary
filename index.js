@@ -71,6 +71,7 @@ SCACommunicator.prototype.fetchDemoData = function () {
 
 SCACommunicator.prototype.buildHTML = function (fieldData) {
   const fields = [];
+  this.message = [...this.message, 'Building the HTML fields'];
   for (let [key, {label, fieldHTML}] of Object.entries(fieldData)) {
     if (!fieldHTML) continue;
 
@@ -90,6 +91,7 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
             option.textContent = value.$t;
             option.value = value.value;
             inputEle.append(option);
+            this.message.push('Building options');
           }
 
           inputEle.setAttribute(name, value);

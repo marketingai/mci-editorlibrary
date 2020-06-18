@@ -101,6 +101,8 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
               opt.value = value.value;
               inputEle.appendChild(opt);
             }
+          } else {
+            inputEle.setAttribute(name, value);
           }
         }
       }

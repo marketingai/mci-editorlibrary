@@ -87,20 +87,26 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
       for (let [ele, attributes] of Object.entries(fieldHTML)) {
         inputEle = document.createElement(ele);
         for (let [name, value] of Object.entries(attributes)) {
-          this.log.debug.push([name, value]);
           if (name === 'option') {
-            if (value.constructor.name === 'array') {
+            if (value.constructor.name === 'Array') {
               for (let option of value) {
                 const opt = document.createElement(name);
                 opt.textContent = option.$t;
                 opt.value = option.value;
                 inputEle.appendChild(opt);
               }
+            } else {
+              const opt = document.createElement(name);
+              opt.textContent = value.$t;
+              opt.value = value.value;
+              inputEle.appendChild(opt);
             }
           }
         }
       }
     }
+
+    
     fields.push({label: labelEle, input: inputEle});
   }
   

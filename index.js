@@ -64,9 +64,10 @@ SCACommunicator.prototype.fetchDemoData = function () {
     }));
   }
 
-  Promise.all(useCasePromises)
+  return Promise.all(useCasePromises)
   .then(() => {
     this.dispatch('useCaseDemoFieldsSuccess', this.demoData);
+    return this.demoData;
   });
 };
 
@@ -132,16 +133,22 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
     jobData: packet.jobData
   };
 
-  axios({
-    method: 'POST',
-    url: jobRequestEndPoint,
-    data: reqOpt
-  })
-  .then(({data}) => {
-    this.dispatch('jobRequestSuccessful', data);
-    this.jobRequestQueueHelper.set(packet.toHash(), {...packet, jobID: data.jobID});
-  })
-  .catch(error => this.dispatch('jobRequestFailed', error));
+  return new Promise((resolve, reject) => {
+    axios({
+      method: 'POST',
+      url: jobRequestEndPoint,
+      data: reqOpt
+    })
+    .then(({data}) => {
+      this.dispatch('jobRequestSuccessful', data);
+      this.jobRequestQueueHelper.set(packet.toHash(), {...packet, jobID: data.jobID});
+      return resolve(data);
+    })
+    .catch(error => {
+      this.dispatch('jobRequestFailed', error);
+      return reject(error);
+    });
+  });
 };
 
 SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
@@ -157,16 +164,22 @@ SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
     jobResponseEndPoint = `https://jmhz75lc24.execute-api.us-east-2.amazonaws.com/dev/demos/job/${jobID}/full`;
   }
 
-  axios(jobResponseEndPoint)
-  .then(({data}) => {
-    if (data.job) {
-      this.jobResponseQueueHelper.set(jobKey, data.job);
-      return this.dispatch('jobResponseSuccess', data.job);
-    } else {
-      return setTimeout(this.fetchJobResponse, 5000, jobID);
-    }
-  })
-  .catch(error => this.dispatch('jobResponseError', error));
+  return new Promise((resolve, reject) => {
+    axios(jobResponseEndPoint)
+    .then(({data}) => {
+      if (data.job) {
+        this.jobResponseQueueHelper.set(jobKey, data.job);
+        this.dispatch('jobResponseSuccess', data.job);
+        return resolve(data.job);
+      } else {
+        return setTimeout(this.fetchJobResponse, 5000, jobID);
+      }
+    })
+    .catch(error => {
+      this.dispatch('jobResponseError', error);
+      return reject(error);
+    });
+  });
 };
 
 SCACommunicator.prototype.queueCache = function (queueKey, data, flatten = true) {

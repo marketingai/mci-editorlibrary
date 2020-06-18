@@ -116,6 +116,7 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
 };
 
 SCACommunicator.prototype.sendJobRequest = function (packet) {
+  packet = {...packet, userKey: (packet.userKey || this.userKey)}
   if (this.jobRequestQueueHelper.exists(packet.toHash())) return false;
 
   let jobRequestEndPoint;

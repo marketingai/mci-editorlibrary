@@ -121,8 +121,9 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
 
 SCACommunicator.prototype.sendJobRequest = function (packet) {
   packet = {...packet, userKey: (packet.userKey || this.options.userKey)};
+  const jobKey = packet.toHash();
 
-  if (this.jobRequestQueueHelper.exists(packet.toHash())) return this.jobRequestQueueHelper.get(packet.toHash());
+  if (this.jobRequestQueueHelper.exists(jobKey)) return this.jobRequestQueueHelper.get(jobKey);
 
   let jobRequestEndPoint;
   if (this.options.jobRequestEndPoint) {
@@ -147,8 +148,9 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
       data: reqOpt
     })
     .then(({data}) => {
+      data = {...data, jobKey: jobKey};
       this.dispatch('jobRequestSuccessful', data);
-      this.jobRequestQueueHelper.set(packet.toHash(), {...packet, jobID: data.jobID});
+      this.jobRequestQueueHelper.set(jobKey, {...packet, jobID: data.jobID});
       return resolve(data);
     })
     .catch(error => {
@@ -161,17 +163,17 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
 SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
   if (this.jobResponseQueueHelper.exists(jobKey)) return this.dispatch('jobResponseSuccess', this.jobResponseQueueHelper.get(jobKey));
 
-  const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobKey);
-  if (!jobRequest || !jobID) return false;
-
-  let jobResponseEndPoint;
-  if (this.options.jobResponseEndPoint) {
-    jobResponseEndPoint = `${this.options.jobResponseEndPoint}/${jobID}${this.options.jobResponseEndPointExtras}`
-  } else {
-    jobResponseEndPoint = `https://jmhz75lc24.execute-api.us-east-2.amazonaws.com/dev/demos/job/${jobID}/full`;
-  }
-
   return new Promise((resolve, reject) => {
+    const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobKey) || {};
+    if (!jobRequest || !jobID) return reject(`No request could be found matching the jobKey: ${jobKey}. Ensure you're not sending the jobID by mistake.`);
+  
+    let jobResponseEndPoint;
+    if (this.options.jobResponseEndPoint) {
+      jobResponseEndPoint = `${this.options.jobResponseEndPoint}/${jobID}${this.options.jobResponseEndPointExtras}`
+    } else {
+      jobResponseEndPoint = `https://jmhz75lc24.execute-api.us-east-2.amazonaws.com/dev/demos/job/${jobID}/full`;
+    }
+
     axios(jobResponseEndPoint)
     .then(({data}) => {
       if (data.job) {
@@ -179,7 +181,7 @@ SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
         this.dispatch('jobResponseSuccess', data.job);
         return resolve(data);
       } else {
-        return setTimeout(this.fetchJobResponse, 5000, jobID);
+        return setTimeout(this.fetchJobResponse.bind(this), 5000, jobKey);
       }
     })
     .catch(error => {

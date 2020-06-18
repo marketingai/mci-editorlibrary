@@ -122,7 +122,7 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
 SCACommunicator.prototype.sendJobRequest = function (packet) {
   packet = {...packet, userKey: (packet.userKey || this.options.userKey)};
 
-  if (this.jobRequestQueueHelper.exists(packet.toHash())) return false;
+  if (this.jobRequestQueueHelper.exists(packet.toHash())) return this.jobRequestQueueHelper.get(packet.toHash());
 
   let jobRequestEndPoint;
   if (this.options.jobRequestEndPoint) {

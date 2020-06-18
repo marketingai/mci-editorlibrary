@@ -1,4 +1,4 @@
-require('./keygen');
+require('./keygen')();
 const axios = require('axios');
 const document = (window && window.document) || new (require("jsdom"))();
 
@@ -51,15 +51,16 @@ SCACommunicator.prototype.fetchDemoData = function () {
 
   const useCasePromises = [];
   for (let useCase of this.useCaseNames) {
-    useCasePromises.push(new Promise(resolve => {
+    useCasePromises.push(new Promise((resolve, reject) => {
       axios(`${demoEndPoint}/${useCase}`)
       .then(({data}) => {
         this.demoData[useCase] = data;
         this.dispatch(`${useCase}FieldDataSuccess`, this.demoData[useCase]);
-        resolve(data);
+        return resolve({status: "success", data: data});
       })
       .catch(error => {
         this.dispatch(`${useCase}FieldDataError`, error);
+        return reject({status: 'failed', message: error})
       });
     }));
   }
@@ -67,13 +68,15 @@ SCACommunicator.prototype.fetchDemoData = function () {
   return Promise.all(useCasePromises)
   .then(() => {
     this.dispatch('useCaseDemoFieldsSuccess', this.demoData);
-    return this.demoData;
+    return {status: "success", data: data};
+  })
+  .catch(error => {
+    return {status: 'failed', message: error}
   });
 };
 
 SCACommunicator.prototype.buildHTML = function (fieldData) {
   const fields = [];
-  this.log.info.push('Building the HTML fields');
   for (let [key, {label, fieldHTML}] of Object.entries(fieldData)) {
     if (!fieldHTML) continue;
 
@@ -117,7 +120,8 @@ SCACommunicator.prototype.buildHTML = function (fieldData) {
 };
 
 SCACommunicator.prototype.sendJobRequest = function (packet) {
-  packet = {...packet, userKey: (packet.userKey || this.userKey)}
+  packet = {...packet, userKey: (packet.userKey || this.options.userKey)};
+
   if (this.jobRequestQueueHelper.exists(packet.toHash())) return false;
 
   let jobRequestEndPoint;
@@ -134,6 +138,9 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
   };
 
   return new Promise((resolve, reject) => {
+    if (!reqOpt.jobData) return reject({status: 'failed', message: 'Missing jobData property in packet.'});
+    if (!reqOpt.useCaseName) return reject({status: 'failed', message: 'Missing useCaseName property in packet.'});
+
     axios({
       method: 'POST',
       url: jobRequestEndPoint,
@@ -142,11 +149,11 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
     .then(({data}) => {
       this.dispatch('jobRequestSuccessful', data);
       this.jobRequestQueueHelper.set(packet.toHash(), {...packet, jobID: data.jobID});
-      return resolve(data);
+      return resolve({status: "success", data: data});
     })
     .catch(error => {
       this.dispatch('jobRequestFailed', error);
-      return reject(error);
+      return reject({status: 'failed', message: error});
     });
   });
 };
@@ -170,14 +177,14 @@ SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
       if (data.job) {
         this.jobResponseQueueHelper.set(jobKey, data.job);
         this.dispatch('jobResponseSuccess', data.job);
-        return resolve(data.job);
+        return resolve({status: "success", data: data});
       } else {
         return setTimeout(this.fetchJobResponse, 5000, jobID);
       }
     })
     .catch(error => {
       this.dispatch('jobResponseError', error);
-      return reject(error);
+      return reject({status: 'failed', message: error});
     });
   });
 };

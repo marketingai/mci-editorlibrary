@@ -23,8 +23,10 @@ SCACommunicator.prototype = {
 };
 
 SCACommunicator.prototype.init = function () {
-  this.jobRequestQueueHelper = this.queueCache('jobRequestQueue');
-  this.jobResponseQueueHelper = this.queueCache('jobResponseQueue');
+  this.initRequestAndResponseQueues();
+  this.useCaseDetailsCache = this.queueCache('useCaseDetails');
+  this.consolidateRequestsAndResponses();
+
   this.log = {info: [], warn: [], error: [], debug: []};
   this.fetchDemoData();
 
@@ -52,10 +54,18 @@ SCACommunicator.prototype.fetchDemoData = function () {
   const useCasePromises = [];
   for (let useCase of this.useCaseNames) {
     useCasePromises.push(new Promise((resolve, reject) => {
+      if (this.useCaseDetailsCache.exists(useCase)) {
+        this.demoData[useCase] = this.useCaseDetailsCache.get(useCase);
+        this.dispatch(`${useCase}FieldDataSuccess`, this.demoData[useCase]);
+        resolve(this.demoData[useCase]);
+      }
+
+      // We'll run this anyways so it updates with the new use case fields
       axios(`${demoEndPoint}/${useCase}`)
       .then(({data}) => {
         this.demoData[useCase] = data;
         this.dispatch(`${useCase}FieldDataSuccess`, this.demoData[useCase]);
+        this.useCaseDetailsCache.set(useCase, this.demoData[useCase]);
         return resolve(data);
       })
       .catch(error => {
@@ -66,13 +76,11 @@ SCACommunicator.prototype.fetchDemoData = function () {
   }
 
   return Promise.all(useCasePromises)
-  .then(() => {
-    this.dispatch('useCaseDemoFieldsSuccess', this.demoData);
-    return data;
-  })
-  .catch(error => {
-    return error;
-  });
+    .then(() => {
+      this.dispatch('useCaseDemoFieldsSuccess', this.demoData);
+      return data;
+    })
+    .catch(error => error);
 };
 
 SCACommunicator.prototype.buildHTML = function (fieldData) {
@@ -148,10 +156,10 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
       data: reqOpt
     })
     .then(({data}) => {
-      data = {...data, jobKey: jobKey};
-      this.dispatch('jobRequestSuccessful', data);
-      this.jobRequestQueueHelper.set(jobKey, {...packet, jobID: data.jobID});
-      return resolve(data);
+      dataResp = {...data, jobKey: jobKey};
+      this.dispatch('jobRequestSuccessful', dataResp);
+      this.jobRequestQueueHelper.set(jobKey, dataResp);
+      return resolve(dataResp);
     })
     .catch(error => {
       this.dispatch('jobRequestFailed', error);
@@ -161,33 +169,39 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
 };
 
 SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
-  if (this.jobResponseQueueHelper.exists(jobKey)) return this.dispatch('jobResponseSuccess', this.jobResponseQueueHelper.get(jobKey));
+  if (this.jobResponseQueueHelper.exists(jobKey)) {
+    this.dispatch('jobResponseSuccess', this.jobResponseQueueHelper.get(jobKey));
+    return this.jobResponseQueueHelper.get(jobKey);
+  }
+
+  const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobKey) || {};
+  if (!jobRequest || !jobID) return reject(`No request could be found matching the jobKey: ${jobKey}. Ensure you're not sending the jobID by mistake.`);
+
+  let jobResponseEndPoint;
+  if (this.options.jobResponseEndPoint) {
+    jobResponseEndPoint = `${this.options.jobResponseEndPoint}/${jobID}${this.options.jobResponseEndPointExtras}`
+  } else {
+    jobResponseEndPoint = `https://jmhz75lc24.execute-api.us-east-2.amazonaws.com/dev/demos/job/${jobID}/full`;
+  }
 
   return new Promise((resolve, reject) => {
-    const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobKey) || {};
-    if (!jobRequest || !jobID) return reject(`No request could be found matching the jobKey: ${jobKey}. Ensure you're not sending the jobID by mistake.`);
-  
-    let jobResponseEndPoint;
-    if (this.options.jobResponseEndPoint) {
-      jobResponseEndPoint = `${this.options.jobResponseEndPoint}/${jobID}${this.options.jobResponseEndPointExtras}`
-    } else {
-      jobResponseEndPoint = `https://jmhz75lc24.execute-api.us-east-2.amazonaws.com/dev/demos/job/${jobID}/full`;
-    }
-
-    axios(jobResponseEndPoint)
-    .then(({data}) => {
-      if (data.job) {
-        this.jobResponseQueueHelper.set(jobKey, data.job);
-        this.dispatch('jobResponseSuccess', data.job);
-        return resolve(data);
-      } else {
-        return setTimeout(this.fetchJobResponse.bind(this), 5000, jobKey);
-      }
-    })
-    .catch(error => {
-      this.dispatch('jobResponseError', error);
-      return reject(error);
-    });
+    const jobCheck = setInterval(() => {
+      axios(jobResponseEndPoint)
+      .then(({data}) => {
+        if (data.job) {
+          clearInterval(jobCheck);
+          const dataResp = {...data.job, jobKey}
+          this.jobResponseQueueHelper.set(jobKey, dataResp);
+          this.dispatch('jobResponseSuccess', dataResp);
+          console.log("Resolving with data");
+          return resolve(dataResp);
+        }
+      })
+      .catch(error => {
+        this.dispatch('jobResponseError', error);
+        return reject(error);
+      });
+    }, 5000);
   });
 };
 
@@ -251,5 +265,53 @@ SCACommunicator.prototype.queueCache = function (queueKey, data, flatten = true)
 
   return cacheQueueMethods;
 };
+
+SCACommunicator.prototype.consolidateRequestsAndResponses = function () {
+  if (!this.jobResponseQueueHelper) throw new Error('The jobResponseQueueHelper must be instantiated before this method can be invoked.');
+
+  const cachedJobKeys = this.getCachedJobRequestKeys();
+  if (!cachedJobKeys || cachedJobKeys.length === 0) return false;
+
+  const jobRequests = [];
+  for (let key of cachedJobKeys) {
+    if (!this.jobResponseQueueHelper.exists(key)) {
+      jobRequests.push(new Promise(async (resolve, reject) => {
+        try {
+          await this.fetchJobResponse(key);
+          return resolve();
+        } catch (error) {
+          return reject(error);
+        }
+      }));
+    }
+  }
+
+  return Promise.all(jobRequests)
+    .then(() => {
+      this.dispatch('allRequestsAndResponsesConsolidated');
+      return this.jobResponseQueueHelper.getQueue();
+    })
+    .catch(error => error);
+};
+
+SCACommunicator.prototype.getCachedJobRequestKeys = function () {
+  if (!this.jobRequestQueueHelper) throw new Error('The jobRequestQueueHelper must be instantiated before this method can be invoked.');
+
+  return Object.entries(this.jobRequestQueueHelper.getQueue())
+    .map(([key]) => key);
+};
+
+SCACommunicator.prototype.clearCachedJobRequests = function () {
+  this.jobRequestQueueHelper.setQueue({});
+};
+
+SCACommunicator.prototype.clearCachedJobResponses = function () {
+  this.jobResponseQueueHelper.setQueue({});
+};
+
+SCACommunicator.prototype.initRequestAndResponseQueues = function () {
+  this.jobRequestQueueHelper = this.queueCache('jobRequestQueue');
+  this.jobResponseQueueHelper = this.queueCache('jobResponseQueue');
+}
 
 module.exports = SCACommunicator;

@@ -56,11 +56,11 @@ SCACommunicator.prototype.fetchDemoData = function () {
       .then(({data}) => {
         this.demoData[useCase] = data;
         this.dispatch(`${useCase}FieldDataSuccess`, this.demoData[useCase]);
-        return resolve({status: "success", data: data});
+        return resolve(data);
       })
       .catch(error => {
         this.dispatch(`${useCase}FieldDataError`, error);
-        return reject({status: 'failed', message: error})
+        return reject(error)
       });
     }));
   }
@@ -68,10 +68,10 @@ SCACommunicator.prototype.fetchDemoData = function () {
   return Promise.all(useCasePromises)
   .then(() => {
     this.dispatch('useCaseDemoFieldsSuccess', this.demoData);
-    return {status: "success", data: data};
+    return data;
   })
   .catch(error => {
-    return {status: 'failed', message: error}
+    return error;
   });
 };
 
@@ -149,11 +149,11 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
     .then(({data}) => {
       this.dispatch('jobRequestSuccessful', data);
       this.jobRequestQueueHelper.set(packet.toHash(), {...packet, jobID: data.jobID});
-      return resolve({status: "success", data: data});
+      return resolve(data);
     })
     .catch(error => {
       this.dispatch('jobRequestFailed', error);
-      return reject({status: 'failed', message: error});
+      return reject(error);
     });
   });
 };
@@ -177,14 +177,14 @@ SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
       if (data.job) {
         this.jobResponseQueueHelper.set(jobKey, data.job);
         this.dispatch('jobResponseSuccess', data.job);
-        return resolve({status: "success", data: data});
+        return resolve(data);
       } else {
         return setTimeout(this.fetchJobResponse, 5000, jobID);
       }
     })
     .catch(error => {
       this.dispatch('jobResponseError', error);
-      return reject({status: 'failed', message: error});
+      return reject(error);
     });
   });
 };

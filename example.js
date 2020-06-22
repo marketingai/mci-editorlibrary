@@ -6,9 +6,8 @@ const { lorem } = require('faker');
   console.clear();
 
   // Creating new SCACommunicator instance
-  const sca = new SCACommunicator(testConfig);
-  sca.on('init.success', data => console.log("initialized"));
-  await sca.init();
+  const sca = new SCACommunicator();
+  await sca.init(testConfig);
 
   // Defining a package
   const examplePacket = {
@@ -22,10 +21,6 @@ const { lorem } = require('faker');
     }
   };
 
-  console.clear();
   const jobRequest = await sca.sendJobRequest(examplePacket);
-  console.log('JOB REQUEST', jobRequest);
-
-  const jobResponse = await sca.fetchJobResponse(jobRequest.jobKey);
-  console.log(jobResponse);
+  const jobResponse = await sca.fetchJobResponse(jobRequest.jobKey)
 })();

@@ -3,51 +3,69 @@ const axios = require('axios');
 window = (typeof window !== 'undefined' && window) || (new (require('jsdom')).JSDOM('<!DOCTYPE html>')).window;
 document = window.document;
 localStorage = (typeof localStorage !== 'undefined') ? localStorage : (new (require('node-localstorage')).LocalStorage('./nodeLSCache'));
+const coreEventLogs = require('./coreEventLogging');
 
-function SCACommunicator (options = {}) {
-  if (!options.userKey) throw new Error('Missing required argument userkey');
-  if (!options.apiEndpoint) throw new Error('Missing required argument apiEndpoint')
-  
-  this.options = options;
-  if (this.options.loggingEnabled) this.logger = this.defaultLogger(this.options.loggingLevel || 'info');
-  if (this.options.DEBUG) this.logger = this.defaultLogger('debug');
-
+function SCACommunicator () {
   return this;
 }
 
 SCACommunicator.prototype = {
   handlers: {},
   on: function (type, fn) {
-    if (this.options.DEBUG && this.options.onLogs) this.logger.debug(`Listening to ${type}`);
-    if (!this.handlers[type]) this.handlers[type] = [];
+    if (this.options && this.options.DEBUG && this.options.onLogs)
+      this.logger.debug(`Listening to ${type}`);
+
+    if (!this.handlers[type])
+      this.handlers[type] = [];
+
     this.handlers[type].push(fn);
   },
   dispatch: function (type, data) {
-    if (this.options.DEBUG && this.options.dispatchLogs) this.logger.debug(`Dispatching ${type}`);
+    if (this.options && this.options.DEBUG && this.options.dispatchLogs)
+      this.logger.debug(`Dispatching ${type}`);
+
     if (!this.handlers || !this.handlers[type]) return;
+
     for (let handler of this.handlers[type]) {
       handler(data);
     }
   }
 };
 
-SCACommunicator.prototype.init = function () {
-  return new Promise (async (resolve, reject) => {
+
+SCACommunicator.prototype.init = function (options) {
+  return new Promise (async (resolve, reject) => {    
+    this.options = options;
+
+    if (this.options.loggingEnabled)
+      this.logger = this.defaultLogger(this.options.loggingLevel || 'info');
+    if (this.options.DEBUG)
+      this.logger = this.defaultLogger('debug');
+
     try {
       this.dispatch.debug = this.debugDispatch.bind(this);
       this.dispatch.info = this.infoDispatch.bind(this);
       this.dispatch.success = this.successDispatch.bind(this);
       this.dispatch.failed = this.failedDispatch.bind(this);
 
+      if (this.options.includeCoreEventLogs)
+        coreEventLogs(this);
+      
+      if (!options.userKey)
+        throw new Error('Missing required argument userkey');
+      if (!options.apiEndpoint)
+        throw new Error('Missing required argument apiEndpoint');
+
       this.initRequestAndResponseQueues();
       this.useCaseDetailsCache = this.initQueueCache('useCaseDetails');
+
       await this.fetchUseCaseData();
       await this.consolidateRequestsAndResponses();
-
-      this.dispatch.success('init', 'SCACommunicator was initialized successfully', this);
+      
+      this.dispatch.success('init', 'SCACommunicator is successfully inititialized', this);
       return resolve(this);
     } catch (error) {
-      this.dispatch.failed('init', 'SCACommunicator could not be initialized', 'initFailed', error);
+      this.dispatch.failed('init', 'SCACommunicator initialization failed', 'initFailed', error);
       return reject(error);
     }
   });

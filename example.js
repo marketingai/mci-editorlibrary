@@ -3,8 +3,6 @@ const testConfig = require('./test-config');
 const { lorem } = require('faker');
 
 (async () => {
-  console.clear();
-
   // Creating new SCACommunicator instance
   const sca = new SCACommunicator();
   await sca.init(testConfig);
@@ -22,5 +20,5 @@ const { lorem } = require('faker');
   };
 
   const jobRequest = await sca.sendJobRequest(examplePacket);
-  const jobResponse = await sca.fetchJobResponse(jobRequest.jobKey)
+  const jobResponse = await sca.fetchJobResponse(jobRequest.jobKey);
 })();

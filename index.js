@@ -6,12 +6,14 @@ localStorage = (typeof localStorage !== 'undefined') ? localStorage : (new (requ
 const coreEventLogs = require('./coreEventLogging');
 
 function SCACommunicator () {
+  this.ObserverInit();
   return this;
 }
 
-SCACommunicator.prototype = {
-  handlers: {},
-  on: function (type, fn) {
+SCACommunicator.prototype.ObserverInit = function () {
+  this.handlers = {};
+
+  this.on = function (type, fn) {
     if (this.options && this.options.DEBUG && this.options.onLogs)
       this.logger.debug(`Listening to ${type}`);
 
@@ -19,8 +21,9 @@ SCACommunicator.prototype = {
       this.handlers[type] = [];
 
     this.handlers[type].push(fn);
-  },
-  dispatch: function (type, data) {
+  };
+
+  this.dispatch = function (type, data) {
     if (this.options && this.options.DEBUG && this.options.dispatchLogs)
       this.logger.debug(`Dispatching ${type}`);
 
@@ -29,37 +32,43 @@ SCACommunicator.prototype = {
     for (let handler of this.handlers[type]) {
       handler(data);
     }
-  }
+  };
+
+  this.dispatch.debug = this.debugDispatch.bind(this);
+  this.dispatch.info = this.infoDispatch.bind(this);
+  this.dispatch.success = this.successDispatch.bind(this);
+  this.dispatch.failed = this.failedDispatch.bind(this);
 };
 
 
 SCACommunicator.prototype.init = function (options) {
   return new Promise (async (resolve, reject) => {    
     this.options = options;
+    this.useCaseNames = (this.options && this.options.useCaseNames) || [
+      'conversionImprovement',
+      'keywordConsistency',
+      'improvedVisibility',
+      'technicalAudit'
+    ];
 
-    if (this.options.loggingEnabled)
-      this.logger = this.defaultLogger(this.options.loggingLevel || 'info');
-    if (this.options.DEBUG)
+    if (!this.options)
       this.logger = this.defaultLogger('debug');
+    else if (this.options.loggingOptions && this.options.loggingOptions.loggingEnabled) {
+      this.logger = this.defaultLogger(this.options.loggingOptions.loggingLevel || 'info');
+      coreEventLogs(this);
+    }
 
     try {
-      this.dispatch.debug = this.debugDispatch.bind(this);
-      this.dispatch.info = this.infoDispatch.bind(this);
-      this.dispatch.success = this.successDispatch.bind(this);
-      this.dispatch.failed = this.failedDispatch.bind(this);
-
-      if (this.options.includeCoreEventLogs)
-        coreEventLogs(this);
-      
-      if (!options.userKey)
+      if (!this.options || !this.options.userKey)
         throw new Error('Missing required argument userkey');
-      if (!options.apiEndpoint)
+      if (!this.options || !this.options.apiEndpoint)
         throw new Error('Missing required argument apiEndpoint');
 
       this.initRequestAndResponseQueues();
       this.useCaseDetailsCache = this.initQueueCache('useCaseDetails');
 
       await this.fetchUseCaseData();
+      this.buildHTML();
       await this.consolidateRequestsAndResponses();
       
       this.dispatch.success('init', 'SCACommunicator is successfully inititialized', this);
@@ -73,12 +82,6 @@ SCACommunicator.prototype.init = function (options) {
 
 SCACommunicator.prototype.fetchUseCaseData = function () {
   this.dispatch.info('fetchUseCaseData', )
-  this.useCaseNames = this.options.useCaseNames || [
-    'conversionImprovement',
-    'keywordConsistency',
-    'improvedVisibility',
-    'technicalAudit'
-  ];
 
   const useCaseDetailsEndpoint = this.options.useCaseDetailsEndpoint || `${this.options.apiEndpoint}/demos/custom`;
 
@@ -86,7 +89,7 @@ SCACommunicator.prototype.fetchUseCaseData = function () {
   for (let useCase of this.useCaseNames) {
     useCasePromises.push(new Promise((resolve, reject) => {
       if (this.useCaseDetailsCache.exists(useCase)) {
-        this.dispatch.success(`fetchUseCaseData.${useCase}.cached`, `Successfully fetched ${useCase} use case data`, this.useCaseDetailsCache.get(useCase));
+        this.dispatch.success(`fetchUseCaseData.${useCase}.cached`, `Successfully fetched ${useCase} use case data cache`, this.useCaseDetailsCache.get(useCase));
         resolve(this.useCaseDetailsCache.get(useCase));
       }
 
@@ -94,8 +97,7 @@ SCACommunicator.prototype.fetchUseCaseData = function () {
       axios(`${useCaseDetailsEndpoint}/${useCase}`)
       .then(({data}) => {
         this.useCaseDetailsCache.set(useCase, data);
-        this.buildHTML(this.useCaseDetailsCache.get(useCase));
-        this.dispatch.success(`fetchUseCaseData.${useCase}`, `Successfully fetched ${useCase} use case data`, this.useCaseDetailsCache.get(useCase));
+        this.dispatch.success(`fetchUseCaseData.${useCase}.update`, `Successfully updated ${useCase} use case data cache`, this.useCaseDetailsCache.get(useCase));
         return resolve(this.useCaseDetailsCache.get(useCase));
       })
       .catch(error => {
@@ -116,60 +118,62 @@ SCACommunicator.prototype.fetchUseCaseData = function () {
     });
 };
 
-SCACommunicator.prototype.buildHTML = function ({useCaseName, fields}) {
-  const HTMLfields = [];
+SCACommunicator.prototype.buildHTML = function () {
+  for (let [useCaseName, {fields}] of Object.entries(this.useCaseDetailsCache.getQueue())) {
+    const HTMLfields = [];
 
-  try {
-    for (let [key, {label, fieldHTML}] of Object.entries(fields)) {
-      if (!fieldHTML) continue;
+    try {
+      for (let [key, {label, fieldHTML}] of Object.entries(fields)) {
+        if (!fieldHTML) continue;
 
-      const labelEle = document.createElement('label');
-      labelEle.textContent = label;
+        const labelEle = document.createElement('label');
+        labelEle.textContent = label;
 
-      let inputEle;
-      if (typeof fieldHTML === 'string') {
-        const dom = (typeof DOMParser !== 'undefined') ?
-          new DOMParser().parseFromString(fieldHTML, 'text/xml') :
-          new window.DOMParser().parseFromString(fieldHTML, 'text/xml');
-        inputEle = dom.firstChild;
-      } else {
-        for (let [ele, attributes] of Object.entries(fieldHTML)) {
-          inputEle = document.createElement(ele);
-          for (let [name, value] of Object.entries(attributes)) {
-            if (name === 'option') {
-              if (value.constructor.name === 'Array') {
-                for (let option of value) {
+        let inputEle;
+        if (typeof fieldHTML === 'string') {
+          const dom = (typeof DOMParser !== 'undefined') ?
+            new DOMParser().parseFromString(fieldHTML, 'text/xml') :
+            new window.DOMParser().parseFromString(fieldHTML, 'text/xml');
+          inputEle = dom.firstChild;
+        } else {
+          for (let [ele, attributes] of Object.entries(fieldHTML)) {
+            inputEle = document.createElement(ele);
+            for (let [name, value] of Object.entries(attributes)) {
+              if (name === 'option') {
+                if (value.constructor.name === 'Array') {
+                  for (let option of value) {
+                    const opt = document.createElement(name);
+                    opt.textContent = option.$t;
+                    opt.value = option.value;
+                    inputEle.appendChild(opt);
+                  }
+                } else {
                   const opt = document.createElement(name);
-                  opt.textContent = option.$t;
-                  opt.value = option.value;
+                  opt.textContent = value.$t;
+                  opt.value = value.value;
                   inputEle.appendChild(opt);
                 }
               } else {
-                const opt = document.createElement(name);
-                opt.textContent = value.$t;
-                opt.value = value.value;
-                inputEle.appendChild(opt);
+                inputEle.setAttribute(name, value);
               }
-            } else {
-              inputEle.setAttribute(name, value);
             }
           }
         }
-      }
 
-      
-      HTMLfields.push({label: labelEle, input: inputEle});
+        
+        HTMLfields.push({label: labelEle, input: inputEle});
+      }
+    } catch (error) {
+      this.dispatch.failed('buildHTML', "Building HTML failed", "buildHTMLError", error);
+      throw new Error(error);
     }
-  } catch (error) {
-    this.dispatch.failed('buildHTML', "Building HTML failed", "buildHTMLError", error);
-    throw new Error(error);
+    
+    this.HTMLFields = this.HTMLFields || {};
+    this.HTMLFields[useCaseName] = HTMLfields;
   }
   
-  this.dispatch('buildHTML.success', HTMLfields);
-  this.HTMLFields = this.HTMLFields || {};
-  this.HTMLFields[useCaseName] = HTMLfields;
-  
-  return fields;
+  this.dispatch.success('buildHTML', 'Successfully built HTML fields', this.HTMLfields);
+  return this.HTMLFields;
 };
 
 SCACommunicator.prototype.sendJobRequest = function (packet) {
@@ -181,7 +185,7 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
 
   if (this.jobRequestQueueHelper.exists(jobKey)) {
     const cachedJobRequest = this.jobRequestQueueHelper.get(jobKey);
-    this.dispatch('sendJobRequest.cachedRequest.success', cachedJobRequest);
+    this.dispatch.success('sendJobRequest.cachedRequest', 'Cached job request found', cachedJobRequest);
     return cachedJobRequest;
   };
 
@@ -190,20 +194,17 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
     useCaseName: packet.useCaseName,
     jobData: packet.jobData
   };
-  this.logger.debug('Built request options for job request', reqOpt);
 
   return new Promise((resolve, reject) => {
     if (!reqOpt.jobData) {
       const errMsg = 'Missing jobData property in packet.';
-      this.logger.error(errMsg);
-      this.dispatch('sendJobRequest.failed', errMsg);
+      this.dispatch.failed('sendJobRequest', 'The job request failed due to missing jobData property in packet', 'missingProperty', errMsg);
       return reject(errMsg);
     }
 
     if (!reqOpt.useCaseName) {
       const errMsg = 'Missing useCaseName property in packet';
-      this.logger.error(errMsg);
-      this.dispatch('sendJobRequest.failed', 'Missing ');
+      this.dispatch.failed('sendJobRequest', 'The job request failed due to missing useCaseName property in packet', 'missingProperty', errMsg);
       return reject('Missing useCaseName property in packet.');
     }
 
@@ -214,12 +215,12 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
     })
     .then(({data}) => {
       dataResp = {...data, jobKey: jobKey};
-      this.dispatch('jobRequestSuccessful', dataResp);
+      this.dispatch.success('sendJobRequest', 'Job request was sent successfully', dataResp);
       this.jobRequestQueueHelper.set(jobKey, dataResp);
       return resolve(dataResp);
     })
     .catch(error => {
-      this.dispatch('jobRequestFailed', error);
+      this.dispatch.failed('sendJobRequest', 'The job request failed due to error', 'error', error);
       return reject(error);
     });
   });
@@ -227,7 +228,7 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
 
 SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
   if (this.jobResponseQueueHelper.exists(jobKey)) {
-    this.dispatch('jobResponseSuccess', this.jobResponseQueueHelper.get(jobKey));
+    this.dispatch.success('fetchJobResponse.cached', 'Cached job response found', this.jobResponseQueueHelper.get(jobKey));
     return this.jobResponseQueueHelper.get(jobKey);
   }
 
@@ -249,12 +250,12 @@ SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
           clearInterval(jobCheck);
           const dataResp = {...data.job, jobKey}
           this.jobResponseQueueHelper.set(jobKey, dataResp);
-          this.dispatch('jobResponseSuccess', dataResp);
+          this.dispatch.success('fetchJobResponse', 'Job response fetched successfully', dataResp);
           return resolve(dataResp);
         }
       })
       .catch(error => {
-        this.dispatch('jobResponseError', error);
+        this.dispatch.failed('fetchJobResponse', 'There was an error fetching the job response', 'error', error);
         return reject(error);
       });
     }, 5000);
@@ -273,23 +274,19 @@ SCACommunicator.prototype.initQueueCache = function (queueKey, data, flatten = t
       this[queueKey] = {};
       this.dispatch.failed('initQueueCache.localStorage', "Initializing localStorage cache failed", "localStorageCacheError", "localStorage is undefined");
     }
-
-    this.dispatch.success('initQueueCache', 'Initializing queue cache was a success', this[queueKey]);
   } catch (error) {
     this[queueKey] = {};
-    this.dispatch.failed('initQueueCache', "Initializing queue cache failed", "initQueueCacheError", error);
+    this.dispatch.failed('initQueueCache', `Initializing ${queueKey} queue cache failed`, "initQueueCacheError", error);
   }
-
-  this.on('initQueueCache.failed', error => console.error(error));
 
   try {
     const cacheQueueMethods = {
       setQueue: function (data) {
         this[queueKey] = data;
-        this.dispatch('initQueueCache.setQueue', {queueKey, queue: this[queueKey]});
+        this.dispatch.info('initQueueCache.setQueue', `Setting ${queueKey} queue cache`, {queueKey, queue: this[queueKey]});
       }.bind(this),
       getQueue: function () {
-        this.dispatch('initQueueCache.getQueue', {queueKey, queue: this[queueKey]});
+        this.dispatch.info('initQueueCache.getQueue', `Getting ${queueKey} queue cache`, {queueKey, queue: this[queueKey]});
         return this[queueKey];
       }.bind(this),
       set: function (key, data) {
@@ -297,11 +294,11 @@ SCACommunicator.prototype.initQueueCache = function (queueKey, data, flatten = t
         queue[key] = data;
         this.setQueue(queue);
         if (typeof localStorage !== 'undefined') localStorage.setItem(queueKey, JSON.stringify(queue));
-        self.dispatch('initQueueCache.set', {key, data: queue[key]});
+        self.dispatch.info('initQueueCache.set', `Setting ${key} data in ${queueKey} queue cache`, {key, data: queue[key]});
       },
       get: function (key) {
         const queue = this.getQueue();
-        self.dispatch('initQueueCache.get', {key, data: queue[key]});
+        self.dispatch.info('initQueueCache.get', `Getting ${key} data from ${queueKey} queue cache`, {key, data: queue[key]});
         return queue[key];
       },
       add: function (key, data) {
@@ -313,28 +310,30 @@ SCACommunicator.prototype.initQueueCache = function (queueKey, data, flatten = t
             data = {...curData, ...data};
         }
         this.set(key, data);
-        self.dispatch('initQueueCache.add', {key, data});
+        self.dispatch.info('initQueueCache.add', `Adding to ${key} data in ${queueKey} queue cache`, {key, data});
       },
       delete: function (key) {
         const queue = this.getQueue();
         delete queue[key];
         this.setQueue(queue);
-        self.dispatch('initQueueCache.delete', key);
+        self.dispatch.info('initQueueCache.delete', `Removing ${key} data from ${queueKey} queue cache`, key);
       },
       exists: function (key) {
-        self.dispatch('initQueueCache.exists', key);
+        self.dispatch.info('initQueueCache.exists', `Checking existence of ${key} data in ${queueKey} queue cache`, key);
         return !!this.getQueue()[key];
       }
     };
 
+    this.dispatch.success('initQueueCache', `Initializing ${queueKey} queue cache was successful`)
     return cacheQueueMethods;
   } catch (error) {
-    this.dispatch.failed('initQueueCache', "Initializing queue cache failed", "initQueueCacheError", error);
+    this.dispatch.failed('initQueueCache', `Initializing queue cache failed`, "initQueueCacheError", error);
     throw new Error(error);
   }
 };
 
 SCACommunicator.prototype.consolidateRequestsAndResponses = function () {
+  this.dispatch.info('consolidateRequestsAndResponses.invoked', 'Attempting to consolidate job requests and responses');
   if (!this.jobResponseQueueHelper) throw new Error('The jobResponseQueueHelper must be instantiated before this method can be invoked.');
 
   const cachedJobKeys = this.getCachedJobRequestKeys();
@@ -356,36 +355,70 @@ SCACommunicator.prototype.consolidateRequestsAndResponses = function () {
 
   return Promise.all(jobRequests)
     .then(() => {
-      this.dispatch('consolidateRequestsAndResponses.success');
+      this.dispatch.success('consolidateRequestsAndResponses', 'Consolidated requests and responses successfully');
       return this.jobResponseQueueHelper.getQueue();
     })
     .catch(error => {
-      this.dispatch('consolidateRequestsAndResponses.failed', error);
+      this.dispatch.failed('consolidateRequestsAndResponses', 'There was an error during consolidation of requests and responses', 'error', error);
       return error;
     });
 };
 
 SCACommunicator.prototype.getCachedJobRequestKeys = function () {
-  if (!this.jobRequestQueueHelper) throw new Error('The jobRequestQueueHelper must be instantiated before this method can be invoked.');
+  if (!this.jobRequestQueueHelper) {
+    this.dispatch.failed('getCachedJobRequestKeys', 'There was an error getting the job request queue', 'queueMissing', 'jobRequestQueueHelper not found');
+    throw new Error('The jobRequestQueueHelper must be instantiated before this method can be invoked.');
+  }
 
-  const jobKeys = Object.entries(this.jobRequestQueueHelper.getQueue())
-    .map(([key]) => key);
-  this.dispatch('getCachedJobRequestKeys.success', jobKeys);
+  try {
+    const jobKeys = Object.entries(this.jobRequestQueueHelper.getQueue())
+      .map(([key]) => key);
+    this.dispatch.success('getCachedJobRequestKeys', 'Cached job request keys found', jobKeys);
+  } catch (error) {
+    this.dispatch.failed('getCachedJobRequestKeys', 'There was an error retrieving the job request keys', 'error', error);
+    throw new Error(error);
+  }
 };
 
 SCACommunicator.prototype.clearCachedJobRequests = function () {
-  this.jobRequestQueueHelper.setQueue({});
-  this.dispatch('clearCachedJobRequests.success', this.jobRequestQueueHelper.getQueue());
+  if (!this.jobRequestQueueHelper) {
+    this.dispatch.failed('clearCachedJobRequests', 'There was an error getting the job request queue', 'queueMissing', 'jobRequestQueueHelper not found');
+    throw new Error('The jobRequestQueueHelper must be instantiated before this method can be invoked.');
+  }
+
+  try {
+    this.jobRequestQueueHelper.setQueue({});
+    this.dispatch.success('clearCachedJobRequests', 'Cached job request keys were cleared', jobKeys);
+  } catch (error) {
+    this.dispatch.failed('clearCachedJobRequests', 'There was an error clearing the job request keys', 'error', error);
+    throw new Error(error);
+  }
 };
 
 SCACommunicator.prototype.clearCachedJobResponses = function () {
-  this.jobResponseQueueHelper.setQueue({});
-  this.dispatch('clearCachedJobResponses.success', this.jobResponseQueueHelper.getQueue());
+  if (!this.jobResponseQueueHelper) {
+    this.dispatch.failed('clearCachedJobResponses', 'There was an error getting the job response queue', 'queueMissing', 'jobResponseQueueHelper not found');
+    throw new Error('The jobResponseQueueHelper must be instantiated before this method can be invoked.');
+  }
+
+  try {
+    this.jobResponseQueueHelper.setQueue({});
+    this.dispatch('clearCachedJobResponses.success', this.jobResponseQueueHelper.getQueue());
+  } catch (error) {
+    this.dispatch.failed('clearCachedJobResponses', 'There was an error clearing the job responses', 'error', error);
+    throw new Error(error);
+  }
 };
 
 SCACommunicator.prototype.initRequestAndResponseQueues = function () {
-  this.jobRequestQueueHelper = this.initQueueCache('jobRequestQueue');
-  this.jobResponseQueueHelper = this.initQueueCache('jobResponseQueue');
+  try {
+    this.jobRequestQueueHelper = this.initQueueCache('jobRequestQueue');
+    this.jobResponseQueueHelper = this.initQueueCache('jobResponseQueue');
+    this.dispatch.success('initRequestAndResponseQueues', 'The job request and response queues were initialized successfully');
+  } catch (error) {
+    this.dispatch.failed('initRequestAndResponseQueues', 'There was an error initializing the job request and response queues', 'error', error);
+    throw new Error(error);
+  }
 };
 
 SCACommunicator.prototype.dispatchMessageFormat = function (dispatchCode, message, postFix = 'info') {
@@ -427,7 +460,7 @@ SCACommunicator.prototype.failedDispatch = function (dispatchCode, contextualMes
 };
 
 SCACommunicator.prototype.defaultLogger = function (loggingLevel) {
-  const loggingLevels = [
+  let loggingLevels = [
     'log',
     'info',
     'error',
@@ -435,15 +468,24 @@ SCACommunicator.prototype.defaultLogger = function (loggingLevel) {
     'debug'
   ];
 
+  const { only } = ((this.options && this.options.loggingOptions) || {});
+  if (only) {
+    loggingLevels = only;
+  }
+
   loggingLevel = loggingLevel || 'info';
   const allowedLevel = loggingLevels.indexOf(loggingLevel);
 
   return new Proxy({}, {
-    get: function (proxy, type) {
-      if (!loggingLevels.includes(loggingLevel)) (...args) => console.log(...args);
-      if (!(loggingLevels.indexOf(type) <= allowedLevel)) return () => undefined;
-      if (loggingLevel === 'debug') return (...args) => console.dir(...args);
-
+    get: function (_, type) {
+      if (!loggingLevels.includes(loggingLevel) && !only) {
+        (...args) => console.log(...args);
+      }
+      
+      if (!(loggingLevels.indexOf(type) <= allowedLevel && loggingLevels.indexOf(type) >= 0)) {
+        return () => undefined;
+      }
+      
       return (...args) => console[type](...args);
     }
   });

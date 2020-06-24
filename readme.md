@@ -16,7 +16,7 @@
 npm install "git+https://github.com/marketingai/mci-editorlibrary.git"
 ```
 
-### Instantiate a new MCIEditorLibrary instance
+### Instantiate a new MCI EditorLibrary instance
 ```javascript
 const MCIEditorLibrary = require('MCIEditorLibrary');
 const mci = new MCIEditorLibrary({
@@ -49,6 +49,7 @@ const jobResponse = await mci.fetchJobResponse(jobRequest.jobKey);
 ---
 <br/>
 <br/>
+
 # Advance Features of the MCI Library:
 
 ## Hook Events

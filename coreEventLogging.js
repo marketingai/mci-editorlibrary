@@ -1,28 +1,23 @@
-const SCACommunicator = require(".");
+module.exports = mci => {
+  if (!mci) throw new Error('You are missing an instantiated SCACommunicator instance');
 
-module.exports = sca => {
-  if (!sca) throw new Error('You are missing an instantiated SCACommunicator instance');
-
-  const { jobLogsOnly, initLogsOnly } = ((sca.options && sca.options.loggingOptions) || {});
+  const { jobLogsOnly, initLogsOnly } = ((mci.options && mci.options.loggingOptions) || {});
 
   if (!jobLogsOnly) {
-    sca.on('init.failed', message => sca.logger.error(message));
-    sca.on('init.success', that => sca.logger.debug(that.message));
+    mci.on('initQueueCache.localStorage.success', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.localStorage.failed', that => mci.logger.error(that.message));
+    mci.on('initQueueCache.success', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.failed', that => mci.logger.error(that.message));
+    mci.on('initQueueCache.setQueue.info', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.getQueue.info', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.set.info', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.get.info', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.add.info', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.delete.info', that => mci.logger.debug(that.message));
+    mci.on('initQueueCache.exists.info', that => mci.logger.debug(that.message));
 
-    sca.on('initQueueCache.localStorage.success', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.localStorage.failed', that => sca.logger.error(that.message));
-    sca.on('initQueueCache.success', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.failed', that => sca.logger.error(that.message));
-    sca.on('initQueueCache.setQueue.info', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.getQueue.info', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.set.info', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.get.info', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.add.info', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.delete.info', that => sca.logger.debug(that.message));
-    sca.on('initQueueCache.exists.info', that => sca.logger.debug(that.message));
-
-    sca.on('initRequestAndResponseQueues.success', that => sca.logger.debug(that.message));
-    sca.on('initRequestAndResponseQueues.failed', that => sca.logger.error(that.message));
+    mci.on('initRequestAndResponseQueues.success', that => mci.logger.debug(that.message));
+    mci.on('initRequestAndResponseQueues.failed', that => mci.logger.error(that.message));
 
     [
       'conversionImprovement',
@@ -30,35 +25,39 @@ module.exports = sca => {
       'improvedVisibility',
       'technicalAudit'
     ].map(useCase => {
-      sca.on(`fetchUseCaseData.${useCase}.cached.success`, that => sca.logger.debug(that.message));
-      sca.on(`fetchUseCaseData.${useCase}.update.success`, that => sca.logger.debug(that.message));
-      sca.on(`fetchUseCaseData.${useCase}.update.failed`, that => sca.logger.error(that.message));
-      sca.on('fetchUseCaseData.success', that => sca.logger.debug(that.message));
-      sca.on('fetchUseCaseData.failed', that => sca.logger.error(that.message));
+      mci.on(`fetchUseCaseData.${useCase}.cached.success`, that => mci.logger.debug(that.message));
+      mci.on(`fetchUseCaseData.${useCase}.update.success`, that => mci.logger.debug(that.message));
+      mci.on(`fetchUseCaseData.${useCase}.update.failed`, that => mci.logger.error(that.message));
+      mci.on('fetchUseCaseData.success', that => mci.logger.debug(that.message));
+      mci.on('fetchUseCaseData.failed', that => mci.logger.error(that.message));
     });
 
-    sca.on('buildHTML.success', that => sca.logger.debug(that.message));
-    sca.on('buildHTML.failed', that => sca.logger.error(that.message));
+    mci.on('buildHTML.success', that => mci.logger.debug(that.message));
+    mci.on('buildHTML.failed', that => mci.logger.error(that.message));
   }
 
+  mci.on('init.success', that => mci.logger.debug(that.message));
+  mci.on('init.failed', message => mci.logger.error(message));
+
   if (!initLogsOnly) {
-    sca.on('consolidateRequestsAndResponses.info', that => sca.logger.debug(that.message));
-    sca.on('consolidateRequestsAndResponses.success', that => sca.logger.debug(that.message));
-    sca.on('consolidateRequestsAndResponses.failed', that => sca.logger.error(that.message));
-    sca.on('getCachedJobRequestKeys.success', that => sca.logger.debug(that.message));
-    sca.on('getCachedJobRequestKeys.failed', that => sca.logger.error(that.message));
-    sca.on('clearCachedJobRequests.success', that => sca.logger.debug(that.message));
-    sca.on('clearCachedJobRequests.failed', that => sca.logger.error(that.message));
-    sca.on('clearCachedJobResponses.success', that => sca.logger.debug(that.message));
-    sca.on('clearCachedJobResponses.failed', that => sca.logger.error(that.message));
+    mci.on('consolidateRequestsAndResponses.info', that => mci.logger.debug(that.message));
+    mci.on('consolidateRequestsAndResponses.success', that => mci.logger.debug(that.message));
+    mci.on('consolidateRequestsAndResponses.failed', that => mci.logger.error(that.message));
+    mci.on('getCachedJobRequestKeys.success', that => mci.logger.debug(that.message));
+    mci.on('getCachedJobRequestKeys.failed', that => mci.logger.error(that.message));
+    mci.on('clearCachedJobRequests.success', that => mci.logger.debug(that.message));
+    mci.on('clearCachedJobRequests.failed', that => mci.logger.error(that.message));
+    mci.on('clearCachedJobResponses.success', that => mci.logger.debug(that.message));
+    mci.on('clearCachedJobResponses.failed', that => mci.logger.error(that.message));
 
-    sca.on('sendJobRequest.invoked', packet => sca.logger.debug('Job request invoked'));
-    sca.on('sendJobRequest.cachedRequest', that => sca.logger.debug(that.message));
-    sca.on('sendJobRequest.success', that => sca.logger.debug(that.message));
-    sca.on('sendJobRequest.failed', that => sca.logger.error(that.message));
+    mci.on('sendJobRequest.invoked.info', packet => mci.logger.debug('Job request invoked'));
+    mci.on('sendJobRequest.cachedRequest.success', that => mci.logger.debug(that.message));
+    mci.on('sendJobRequest.success', that => mci.logger.debug(that.message));
+    mci.on('sendJobRequest.failed', that => mci.logger.error(that.message));
 
-    sca.on('fetchJobResponse.cached.success', that => sca.logger.debug(that.message));
-    sca.on('fetchJobResponse.success', that => sca.logger.debug(that.message));
-    sca.on('fetchJobResponse.failed', that => sca.logger.error(that.message));
+    mci.on('fetchJobResponse.invoked.info', jobKey => mci.logger.debug('Job response invoked'));
+    mci.on('fetchJobResponse.cached.success', that => mci.logger.debug(that.message));
+    mci.on('fetchJobResponse.success', that => mci.logger.debug(that.message));
+    mci.on('fetchJobResponse.failed', that => mci.logger.error(that.message));
   }
 };

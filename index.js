@@ -5,12 +5,12 @@ document = window.document;
 localStorage = (typeof localStorage !== 'undefined') ? localStorage : (new (require('node-localstorage')).LocalStorage('./nodeLSCache'));
 const coreEventLogs = require('./coreEventLogging');
 
-function SCACommunicator () {
+function MCIEditorLibrary () {
   this.ObserverInit();
   return this;
 }
 
-SCACommunicator.prototype.ObserverInit = function () {
+MCIEditorLibrary.prototype.ObserverInit = function () {
   this.handlers = {};
 
   this.on = function (type, fn) {
@@ -41,7 +41,7 @@ SCACommunicator.prototype.ObserverInit = function () {
 };
 
 
-SCACommunicator.prototype.init = function (options) {
+MCIEditorLibrary.prototype.init = function (options) {
   return new Promise (async (resolve, reject) => {    
     this.options = options;
     this.useCaseNames = (this.options && this.options.useCaseNames) || [
@@ -55,7 +55,7 @@ SCACommunicator.prototype.init = function (options) {
       this.logger = this.defaultLogger('debug');
     else if (this.options.loggingOptions && this.options.loggingOptions.loggingEnabled) {
       this.logger = this.defaultLogger(this.options.loggingOptions.loggingLevel || 'info');
-      coreEventLogs(this);
+      if (this.options.loggingOptions.coreEventLogsEnabled) coreEventLogs(this);
     }
 
     try {
@@ -71,17 +71,17 @@ SCACommunicator.prototype.init = function (options) {
       this.buildHTML();
       await this.consolidateRequestsAndResponses();
       
-      this.dispatch.success('init', 'SCACommunicator is successfully inititialized', this);
+      this.dispatch.success('init', 'MCIEditorLibrary is successfully inititialized', this);
       return resolve(this);
     } catch (error) {
-      this.dispatch.failed('init', 'SCACommunicator initialization failed', 'initFailed', error);
+      this.dispatch.failed('init', 'MCIEditorLibrary initialization failed', 'initFailed', error);
       return reject(error);
     }
   });
 };
 
-SCACommunicator.prototype.fetchUseCaseData = function () {
-  this.dispatch.info('fetchUseCaseData', )
+MCIEditorLibrary.prototype.fetchUseCaseData = function () {
+  this.dispatch.info('fetchUseCaseData.invoked', 'Invoking fetchUseCaseData');
 
   const useCaseDetailsEndpoint = this.options.useCaseDetailsEndpoint || `${this.options.apiEndpoint}/demos/custom`;
 
@@ -109,16 +109,16 @@ SCACommunicator.prototype.fetchUseCaseData = function () {
 
   return Promise.all(useCasePromises)
   .then(() => {
-      this.dispatch.success('fetchUseCaseData', "Successfully fetched use case data", this.useCaseDetailsCache.getQueue());
-      return this.useCaseDetailsCache.getQueue();
-    })
-    .catch(error => {
-      this.dispatch.failed('fetchUseCaseData', "Fetch use case data failed", "fetchUseCaseDataFailed", error);
-      throw new Error(error);
-    });
+    this.dispatch.success('fetchUseCaseData', "Successfully fetched use case data", this.useCaseDetailsCache.getQueue());
+    return this.useCaseDetailsCache.getQueue();
+  })
+  .catch(error => {
+    this.dispatch.failed('fetchUseCaseData', "Fetch use case data failed", "fetchUseCaseDataFailed", error);
+    throw new Error(error);
+  });
 };
 
-SCACommunicator.prototype.buildHTML = function () {
+MCIEditorLibrary.prototype.buildHTML = function () {
   for (let [useCaseName, {fields}] of Object.entries(this.useCaseDetailsCache.getQueue())) {
     const HTMLfields = [];
 
@@ -176,8 +176,8 @@ SCACommunicator.prototype.buildHTML = function () {
   return this.HTMLFields;
 };
 
-SCACommunicator.prototype.sendJobRequest = function (packet) {
-  this.dispatch('sendJobRequest.invoked', packet);
+MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
+  this.dispatch.info('sendJobRequest.invoked', packet);
   
 
   packet = {...packet, userKey: (packet.userKey || this.options.userKey)};
@@ -226,7 +226,9 @@ SCACommunicator.prototype.sendJobRequest = function (packet) {
   });
 };
 
-SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
+MCIEditorLibrary.prototype.fetchJobResponse = function (jobKey) {
+  this.dispatch.info('fetchJobResponse.invoked', jobKey);
+
   if (this.jobResponseQueueHelper.exists(jobKey)) {
     this.dispatch.success('fetchJobResponse.cached', 'Cached job response found', this.jobResponseQueueHelper.get(jobKey));
     return this.jobResponseQueueHelper.get(jobKey);
@@ -262,7 +264,7 @@ SCACommunicator.prototype.fetchJobResponse = function (jobKey) {
   });
 };
 
-SCACommunicator.prototype.initQueueCache = function (queueKey, data, flatten = true) {
+MCIEditorLibrary.prototype.initQueueCache = function (queueKey, data, flatten = true) {
   this[queueKey] = data || this[queueKey];
   const self = this;
   
@@ -324,7 +326,7 @@ SCACommunicator.prototype.initQueueCache = function (queueKey, data, flatten = t
       }
     };
 
-    this.dispatch.success('initQueueCache', `Initializing ${queueKey} queue cache was successful`)
+    this.dispatch.success('initQueueCache', `Initializing ${queueKey} queue cache was successful`, this[queueKey])
     return cacheQueueMethods;
   } catch (error) {
     this.dispatch.failed('initQueueCache', `Initializing queue cache failed`, "initQueueCacheError", error);
@@ -332,7 +334,7 @@ SCACommunicator.prototype.initQueueCache = function (queueKey, data, flatten = t
   }
 };
 
-SCACommunicator.prototype.consolidateRequestsAndResponses = function () {
+MCIEditorLibrary.prototype.consolidateRequestsAndResponses = function () {
   this.dispatch.info('consolidateRequestsAndResponses.invoked', 'Attempting to consolidate job requests and responses');
   if (!this.jobResponseQueueHelper) throw new Error('The jobResponseQueueHelper must be instantiated before this method can be invoked.');
 
@@ -364,7 +366,7 @@ SCACommunicator.prototype.consolidateRequestsAndResponses = function () {
     });
 };
 
-SCACommunicator.prototype.getCachedJobRequestKeys = function () {
+MCIEditorLibrary.prototype.getCachedJobRequestKeys = function () {
   if (!this.jobRequestQueueHelper) {
     this.dispatch.failed('getCachedJobRequestKeys', 'There was an error getting the job request queue', 'queueMissing', 'jobRequestQueueHelper not found');
     throw new Error('The jobRequestQueueHelper must be instantiated before this method can be invoked.');
@@ -380,7 +382,7 @@ SCACommunicator.prototype.getCachedJobRequestKeys = function () {
   }
 };
 
-SCACommunicator.prototype.clearCachedJobRequests = function () {
+MCIEditorLibrary.prototype.clearCachedJobRequests = function () {
   if (!this.jobRequestQueueHelper) {
     this.dispatch.failed('clearCachedJobRequests', 'There was an error getting the job request queue', 'queueMissing', 'jobRequestQueueHelper not found');
     throw new Error('The jobRequestQueueHelper must be instantiated before this method can be invoked.');
@@ -395,7 +397,7 @@ SCACommunicator.prototype.clearCachedJobRequests = function () {
   }
 };
 
-SCACommunicator.prototype.clearCachedJobResponses = function () {
+MCIEditorLibrary.prototype.clearCachedJobResponses = function () {
   if (!this.jobResponseQueueHelper) {
     this.dispatch.failed('clearCachedJobResponses', 'There was an error getting the job response queue', 'queueMissing', 'jobResponseQueueHelper not found');
     throw new Error('The jobResponseQueueHelper must be instantiated before this method can be invoked.');
@@ -410,7 +412,7 @@ SCACommunicator.prototype.clearCachedJobResponses = function () {
   }
 };
 
-SCACommunicator.prototype.initRequestAndResponseQueues = function () {
+MCIEditorLibrary.prototype.initRequestAndResponseQueues = function () {
   try {
     this.jobRequestQueueHelper = this.initQueueCache('jobRequestQueue');
     this.jobResponseQueueHelper = this.initQueueCache('jobResponseQueue');
@@ -421,13 +423,13 @@ SCACommunicator.prototype.initRequestAndResponseQueues = function () {
   }
 };
 
-SCACommunicator.prototype.dispatchMessageFormat = function (dispatchCode, message, postFix = 'info') {
+MCIEditorLibrary.prototype.dispatchMessageFormat = function (dispatchCode, message, postFix = 'info') {
   message = {...message, timestamp: (new Date).getTime()};
   this.dispatch(`${dispatchCode}${postFix ? `.${postFix}` : ``}`, message);
   return message;
 };
 
-SCACommunicator.prototype.debugDispatch = function (dispatchCode, ...extras) {
+MCIEditorLibrary.prototype.debugDispatch = function (dispatchCode, ...extras) {
   if (!dispatchCode)
     throw new Error('Dispatch code is a mandatory requirement for success handling');
 
@@ -435,7 +437,7 @@ SCACommunicator.prototype.debugDispatch = function (dispatchCode, ...extras) {
     return this.dispatchMessageFormat(dispatchCode, message, 'debug');
 };
 
-SCACommunicator.prototype.infoDispatch = function (dispatchCode, contextualMessage, extra) {
+MCIEditorLibrary.prototype.infoDispatch = function (dispatchCode, contextualMessage, extra) {
   if (!dispatchCode)
     throw new Error('Dispatch code is a mandatory requirement for success handling');
 
@@ -443,7 +445,7 @@ SCACommunicator.prototype.infoDispatch = function (dispatchCode, contextualMessa
     return this.dispatchMessageFormat(dispatchCode, message, 'info');
 };
 
-SCACommunicator.prototype.successDispatch = function (dispatchCode, contextualMessage, extra) {
+MCIEditorLibrary.prototype.successDispatch = function (dispatchCode, contextualMessage, extra) {
   if (!dispatchCode)
     throw new Error('Dispatch code is a mandatory requirement for success handling');
 
@@ -451,7 +453,7 @@ SCACommunicator.prototype.successDispatch = function (dispatchCode, contextualMe
     return this.dispatchMessageFormat(dispatchCode, message, 'success');
 };
 
-SCACommunicator.prototype.failedDispatch = function (dispatchCode, contextualMessage, errorCode, errorMessage, extra) {
+MCIEditorLibrary.prototype.failedDispatch = function (dispatchCode, contextualMessage, errorCode, errorMessage, extra) {
   if (!dispatchCode || !contextualMessage || !errorCode || !errorMessage)
     throw new Error('Dispatch code, contextual message, error code, and error message are the minimum requirements for error handling.');
 
@@ -459,7 +461,7 @@ SCACommunicator.prototype.failedDispatch = function (dispatchCode, contextualMes
   return this.dispatchMessageFormat(dispatchCode, message, 'failed');
 };
 
-SCACommunicator.prototype.defaultLogger = function (loggingLevel) {
+MCIEditorLibrary.prototype.defaultLogger = function (loggingLevel) {
   let loggingLevels = [
     'log',
     'info',
@@ -491,4 +493,4 @@ SCACommunicator.prototype.defaultLogger = function (loggingLevel) {
   });
 };
 
-module.exports = SCACommunicator;
+module.exports = MCIEditorLibrary;

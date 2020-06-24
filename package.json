@@ -12,11 +12,11 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.19.2",
-    "faker": "^4.1.0",
     "jsdom": "^16.2.2",
     "node-localstorage": "^2.1.6"
   },
   "devDependencies": {
+    "faker": "^4.1.0",
     "jest": "^26.0.1"
   }
 }

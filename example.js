@@ -1,15 +1,15 @@
-const SCACommunicator = require('./index');
 const testConfig = require('./test-config');
-const { lorem } = require('faker');
+const MCIEditorLibrary = require('./index');
 
 (async () => {
   // Creating new SCACommunicator instance
-  const sca = new SCACommunicator();
-  await sca.init(testConfig);
+  console.log("Instantiating MCI");
+  const mci = new MCIEditorLibrary();
+  await mci.init(testConfig);
+  console.log("MCI Instantiated")
 
   // Defining a package
   const examplePacket = {
-    userKey: testConfig.userKey,
     useCaseName: 'conversionImprovement',
     jobData: {
       content: `
@@ -19,6 +19,6 @@ const { lorem } = require('faker');
     }
   };
 
-  const jobRequest = await sca.sendJobRequest(examplePacket);
-  const jobResponse = await sca.fetchJobResponse(jobRequest.jobKey);
+  const jobRequest = await mci.sendJobRequest(examplePacket);
+  const jobResponse = await mci.fetchJobResponse(jobRequest.jobKey);
 })();

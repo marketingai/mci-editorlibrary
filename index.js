@@ -14,7 +14,7 @@ MCIEditorLibrary.prototype.ObserverInit = function () {
   this.handlers = {};
 
   this.on = function (type, fn) {
-    if (this.options && this.options.DEBUG && this.options.onLogs)
+    if (this.options && this.options.loggingOptions && this.options.loggingOptions.onLogs)
       this.logger.debug(`Listening to ${type}`);
 
     if (!this.handlers[type])
@@ -24,7 +24,7 @@ MCIEditorLibrary.prototype.ObserverInit = function () {
   };
 
   this.dispatch = function (type, data) {
-    if (this.options && this.options.DEBUG && this.options.dispatchLogs)
+    if (this.options && this.options.loggingOptions && this.options.loggingOptions.dispatchLogs)
       this.logger.debug(`Dispatching ${type}`);
 
     if (!this.handlers || !this.handlers[type]) return;
@@ -51,9 +51,7 @@ MCIEditorLibrary.prototype.init = function (options) {
       'technicalAudit'
     ];
 
-    if (!this.options)
-      this.logger = this.defaultLogger('debug');
-    else if (this.options.loggingOptions && this.options.loggingOptions.loggingEnabled) {
+    if (this.options && this.options.loggingOptions && this.options.loggingOptions.loggingEnabled) {
       this.logger = this.defaultLogger(this.options.loggingOptions.loggingLevel || 'info');
       if (this.options.loggingOptions.coreEventLogsEnabled) coreEventLogs(this);
     }
@@ -229,20 +227,10 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
 MCIEditorLibrary.prototype.fetchJobResponse = function (jobKey) {
   this.dispatch.info('fetchJobResponse.invoked', jobKey);
 
-  if (this.jobResponseQueueHelper.exists(jobKey)) {
-    this.dispatch.success('fetchJobResponse.cached', 'Cached job response found', this.jobResponseQueueHelper.get(jobKey));
-    return this.jobResponseQueueHelper.get(jobKey);
-  }
-
   const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobKey) || {};
   if (!jobRequest || !jobID) throw new Error(`No request could be found matching the jobKey: ${jobKey}. Ensure you're not sending the jobID by mistake.`);
 
-  let jobResponseEndPoint;
-  if (this.options.jobResponseEndPoint) {
-    jobResponseEndPoint = `${this.options.jobResponseEndPoint}/${jobID}${this.options.jobResponseEndPointExtras}`
-  } else {
-    jobResponseEndPoint = `${this.options.apiEndpoint}/demos/job/${jobID}/full`;
-  }
+  let jobResponseEndPoint = `${this.options.apiEndpoint}/demos/job/${jobID}/full`;
 
   return new Promise((resolve, reject) => {
     const jobCheck = setInterval(() => {
@@ -251,7 +239,6 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobKey) {
         if (data.job) {
           clearInterval(jobCheck);
           const dataResp = {...data.job, jobKey}
-          this.jobResponseQueueHelper.set(jobKey, dataResp);
           this.dispatch.success('fetchJobResponse', 'Job response fetched successfully', dataResp);
           return resolve(dataResp);
         }

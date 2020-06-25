@@ -354,7 +354,7 @@ const mci = new MCIEditorLibrary({
     initLogsOnly: false, // View only init level logs (for core event logs only)
     onLogs: false, // View your registered hook events upon registration
     dispatchLogs: false, // View when a registered hook is dispatched
-    coreEventLoggingEnabled: true, // Enable core event logging
+    coreEventLogsEnabled: true, // Enable core event logging
   }
 });
 ```

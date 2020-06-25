@@ -3,10 +3,8 @@ const MCIEditorLibrary = require('./index');
 
 (async () => {
   // Creating new SCACommunicator instance
-  console.log("Instantiating MCI");
   const mci = new MCIEditorLibrary();
   await mci.init(testConfig);
-  console.log("MCI Instantiated")
 
   // Defining a package
   const examplePacket = {

@@ -389,7 +389,7 @@ mci.sendJobRequest({
 
 |Option|Value|Optional|
 |------|-----|--------|
-|userKey|You provided user.key|yes (provided at instantiation)|
+|userKey|Your provided user.key|yes (provided at instantiation)|
 |useCaseName|Use case name from the list of available use cases|no|
 |jobData|An object containing the required fields and values for the selected use case|no|
 

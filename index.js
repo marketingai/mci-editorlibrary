@@ -81,7 +81,7 @@ MCIEditorLibrary.prototype.init = function (options) {
 MCIEditorLibrary.prototype.fetchUseCaseData = function () {
   this.dispatch.info('fetchUseCaseData.invoked', 'Invoking fetchUseCaseData');
 
-  const useCaseDetailsEndpoint = this.options.useCaseDetailsEndpoint || `${this.options.apiEndpoint}/demos/custom`;
+  const useCaseDetailsEndpoint = `${this.options.apiEndpoint}/demos/custom`;
 
   const useCasePromises = [];
   for (let useCase of this.useCaseNames) {
@@ -380,21 +380,6 @@ MCIEditorLibrary.prototype.clearCachedJobRequests = function () {
     this.dispatch.success('clearCachedJobRequests', 'Cached job request keys were cleared', jobKeys);
   } catch (error) {
     this.dispatch.failed('clearCachedJobRequests', 'There was an error clearing the job request keys', 'error', error);
-    throw new Error(error);
-  }
-};
-
-MCIEditorLibrary.prototype.clearCachedJobResponses = function () {
-  if (!this.jobResponseQueueHelper) {
-    this.dispatch.failed('clearCachedJobResponses', 'There was an error getting the job response queue', 'queueMissing', 'jobResponseQueueHelper not found');
-    throw new Error('The jobResponseQueueHelper must be instantiated before this method can be invoked.');
-  }
-
-  try {
-    this.jobResponseQueueHelper.setQueue({});
-    this.dispatch('clearCachedJobResponses.success', this.jobResponseQueueHelper.getQueue());
-  } catch (error) {
-    this.dispatch.failed('clearCachedJobResponses', 'There was an error clearing the job responses', 'error', error);
     throw new Error(error);
   }
 };

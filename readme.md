@@ -1,7 +1,7 @@
 # MCI Editor Library
 
 ## Description:
-> This library will allow you to make job requests with the MCI API as well as receive job responses. The goal of this library is to provide a robust library that can be integrated with any application, editor, or plugin. It is client-side/server-side agnostic increasing its flexibility. The observer integration provides several logical hooks for tapping into the various life cycle events that occur from instantiation to a job response. In addition, there is a built in caching system to improve response speed for retrieving use cases and previous job request and job response data.
+> This library will allow you to make job requests with the MCI API as well as receive job responses. The goal of this library is to provide a robust library that can be integrated with any application, editor, or plugin. It is client-side/server-side agnostic increasing its flexibility. The observer integration provides several logical hooks for tapping into the various life cycle events that occur from instantiation to a job response. In addition, there is a built in caching system to improve response speed for retrieving use cases and previous job request data.
 
 ## Dependencies:
 > The library relies on a few dependencies such as **Axios**, **JSDOM**, and **Node LocalStorage**. *JSDOM* provides a DOM structure on the server and **Node LocalStorage** provides a caching solution that mimics client-side LocalStorage. Axios is used for the API communication.
@@ -279,16 +279,6 @@ mci.on('hook.event', data => {
     <tr>
       <td>clearCachedJobRequests.failed</td>
       <td>After validation error OR error in clearing the cached job requests</td>
-      <td>{:message, :errorCode, :error}</td>
-    </tr>
-    <tr>
-      <td>clearCachedJobResponses.success</td>
-      <td>After cached job responses are cleared from the job response queue</td>
-      <td>{:message, extra: {...jobResponseQueue}}</td>
-    </tr>
-    <tr>
-      <td>clearCachedJobResponses.failed</td>
-      <td>After validation error OR error in clearing cached job responses</td>
       <td>{:message, :errorCode, :error}</td>
     </tr>
   </tbody>

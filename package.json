@@ -1,5 +1,5 @@
 {
-  "name": "sca-communicator",
+  "name": "mci-editor-library",
   "version": "1.0.0",
   "description": "Helper library for implementing SCA into your own project",
   "main": "index.js",

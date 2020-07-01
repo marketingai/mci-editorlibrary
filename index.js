@@ -219,11 +219,11 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
   });
 };
 
-MCIEditorLibrary.prototype.fetchJobResponse = function (jobKey) {
-  this.dispatch.info('fetchJobResponse.invoked', jobKey);
+MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
+  this.dispatch.info('fetchJobResponse.invoked', jobId);
 
-  const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobKey) || {};
-  if (!jobRequest || !jobID) throw new Error(`No request could be found matching the jobKey: ${jobKey}. Ensure you're not sending the jobID by mistake.`);
+  const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobId) || {};
+  if (!jobRequest || !jobID) throw new Error(`No request could be found matching the jobId: ${jobId}. Ensure you're not sending the jobKey by mistake.`);
 
   let jobResponseEndPoint = `${this.options.apiEndpoint}/job/response/${jobID}/full`;
 
@@ -233,7 +233,7 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobKey) {
       .then(({data}) => {
         if (data.job) {
           clearInterval(jobCheck);
-          const dataResp = {...data.job, jobKey}
+          const dataResp = {...data.job, jobId}
           this.dispatch.success('fetchJobResponse', 'Job response fetched successfully', dataResp);
           return resolve(dataResp);
         }

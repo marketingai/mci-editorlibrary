@@ -78,8 +78,6 @@ MCIEditorLibrary.prototype.init = function (options) {
 MCIEditorLibrary.prototype.fetchUseCaseData = function () {
   this.dispatch.info('fetchUseCaseData.invoked', 'Invoking fetchUseCaseData');
 
-  const useCaseDetailsEndpoint = `${this.options.apiEndpoint}/demos/custom`;
-
   const useCasePromises = [];
   for (let useCase of this.useCaseNames) {
     useCasePromises.push(new Promise((resolve, reject) => {
@@ -89,7 +87,7 @@ MCIEditorLibrary.prototype.fetchUseCaseData = function () {
       }
 
       // We'll run this anyways so it updates with the new use case fields
-      axios(`${useCaseDetailsEndpoint}/useCaseDetails/${useCase}`)
+      axios(`${this.options.apiEndpoint}/useCaseDetails/${useCase}`)
       .then(({data}) => {
         this.useCaseDetailsCache.set(useCase, data);
         this.dispatch.success(`fetchUseCaseData.${useCase}.update`, `Successfully updated ${useCase} use case data cache`, this.useCaseDetailsCache.get(useCase));

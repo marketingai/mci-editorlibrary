@@ -51,11 +51,10 @@ MCIEditorLibrary.prototype.init = function (options) {
       'technicalAudit'
     ];
 
+    this.logger = () => {};
     if (this.options && this.options.loggingOptions && this.options.loggingOptions.loggingEnabled) {
       this.logger = this.defaultLogger(this.options.loggingOptions.loggingLevel || 'info');
       if (this.options.loggingOptions.coreEventLogsEnabled) coreEventLogs(this);
-    } else {
-      this.logger = () => {};
     }
 
     try {

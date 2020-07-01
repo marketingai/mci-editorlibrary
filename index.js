@@ -51,11 +51,7 @@ MCIEditorLibrary.prototype.init = function (options) {
       'technicalAudit'
     ];
 
-    this.logger = () => {};
-    if (this.options && this.options.loggingOptions && this.options.loggingOptions.loggingEnabled) {
-      this.logger = this.defaultLogger(this.options.loggingOptions.loggingLevel || 'info');
-      if (this.options.loggingOptions.coreEventLogsEnabled) coreEventLogs(this);
-    }
+    this.logger = this.defaultLogger();
 
     try {
       if (!this.options || !this.options.userKey)
@@ -434,7 +430,19 @@ MCIEditorLibrary.prototype.failedDispatch = function (dispatchCode, contextualMe
   return this.dispatchMessageFormat(dispatchCode, message, 'failed');
 };
 
-MCIEditorLibrary.prototype.defaultLogger = function (loggingLevel) {
+MCIEditorLibrary.prototype.defaultLogger = function () {
+  if (this.options.loggingOptions.coreEventLogsEnabled) coreEventLogs(this);
+
+  if (!this.options || !this.options.loggingOptions || !this.options.loggingOptions.loggingEnabled) {
+    return new Proxy({}, {
+      get: function (_, type) {
+        return () => {};
+      }
+    })
+  }
+
+  const loggingLevel = this.options.loggingOptions.loggingLevel || 'info';
+
   let loggingLevels = [
     'log',
     'info',

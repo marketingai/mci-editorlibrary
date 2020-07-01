@@ -6,6 +6,7 @@ const MCIEditorLibrary = require('./index');
   const mci = new MCIEditorLibrary();
   await mci.init(testConfig);
   console.log(mci);
+  mci.logger.error('boo');
 
   // Defining a package
   const examplePacket = {

@@ -5,6 +5,7 @@ const MCIEditorLibrary = require('./index');
   // Creating new SCACommunicator instance
   const mci = new MCIEditorLibrary();
   await mci.init(testConfig);
+  console.log(mci);
 
   // Defining a package
   const examplePacket = {
@@ -17,6 +18,6 @@ const MCIEditorLibrary = require('./index');
     }
   };
 
-  const jobRequest = await mci.sendJobRequest(examplePacket);
-  const jobResponse = await mci.fetchJobResponse(jobRequest.jobKey);
+  // const jobRequest = await mci.sendJobRequest(examplePacket);
+  // const jobResponse = await mci.fetchJobResponse(jobRequest.jobKey);
 })();

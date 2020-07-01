@@ -89,7 +89,7 @@ MCIEditorLibrary.prototype.fetchUseCaseData = function () {
       }
 
       // We'll run this anyways so it updates with the new use case fields
-      axios(`${useCaseDetailsEndpoint}/${useCase}`)
+      axios(`${useCaseDetailsEndpoint}/useCaseDetails/${useCase}`)
       .then(({data}) => {
         this.useCaseDetailsCache.set(useCase, data);
         this.dispatch.success(`fetchUseCaseData.${useCase}.update`, `Successfully updated ${useCase} use case data cache`, this.useCaseDetailsCache.get(useCase));
@@ -205,7 +205,7 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
 
     axios({
       method: 'POST',
-      url: `${this.options.apiEndpoint}/demos/job`,
+      url: `${this.options.apiEndpoint}/job/request`,
       data: reqOpt
     })
     .then(({data}) => {
@@ -227,7 +227,7 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobKey) {
   const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobKey) || {};
   if (!jobRequest || !jobID) throw new Error(`No request could be found matching the jobKey: ${jobKey}. Ensure you're not sending the jobID by mistake.`);
 
-  let jobResponseEndPoint = `${this.options.apiEndpoint}/demos/job/${jobID}/full`;
+  let jobResponseEndPoint = `${this.options.apiEndpoint}/job/response/${jobID}/full`;
 
   return new Promise((resolve, reject) => {
     const jobCheck = setInterval(() => {

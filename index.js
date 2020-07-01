@@ -431,8 +431,6 @@ MCIEditorLibrary.prototype.failedDispatch = function (dispatchCode, contextualMe
 };
 
 MCIEditorLibrary.prototype.defaultLogger = function () {
-  if (this.options.loggingOptions.coreEventLogsEnabled) coreEventLogs(this);
-
   if (!this.options || !this.options.loggingOptions || !this.options.loggingOptions.loggingEnabled) {
     return new Proxy({}, {
       get: function (_, type) {
@@ -441,6 +439,7 @@ MCIEditorLibrary.prototype.defaultLogger = function () {
     })
   }
 
+  if (this.options.loggingOptions.coreEventLogsEnabled) coreEventLogs(this);
   const loggingLevel = this.options.loggingOptions.loggingLevel || 'info';
 
   let loggingLevels = [

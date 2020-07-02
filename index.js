@@ -179,6 +179,8 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
   if (this.jobRequestQueueHelper.exists(jobKey)) {
     const cachedJobRequest = this.jobRequestQueueHelper.get(jobKey);
     this.dispatch.success('sendJobRequest.cachedRequest', 'Cached job request found', cachedJobRequest);
+    this.dispatch.success('sendJobRequest', 'Cached job request found', cachedJobRequest);
+    this.logger.info("Cached job request was found", cachedJobRequest)
     return cachedJobRequest;
   };
 

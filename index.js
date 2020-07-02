@@ -222,10 +222,7 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
 MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
   this.dispatch.info('fetchJobResponse.invoked', jobId);
 
-  const {jobID, ...jobRequest} = this.jobRequestQueueHelper.get(jobId) || {};
-  if (!jobRequest || !jobID) throw new Error(`No request could be found matching the jobId: ${jobId}. Ensure you're not sending the jobKey by mistake.`);
-
-  let jobResponseEndPoint = `${this.options.apiEndpoint}/job/response/${jobID}/full`;
+  let jobResponseEndPoint = `${this.options.apiEndpoint}/job/response/${jobId}`;
 
   return new Promise((resolve, reject) => {
     const jobCheck = setInterval(() => {
@@ -233,8 +230,10 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
       .then(({data}) => {
         if (data.job) {
           clearInterval(jobCheck);
-          const dataResp = {...data.job, jobId}
+          const dataResp = {...data.job, jobId};
+          const {jobKey} = dataResp;
           this.dispatch.success('fetchJobResponse', 'Job response fetched successfully', dataResp);
+          this.jobResponseQueueHelper.set(jobKey, jobId);
           return resolve(dataResp);
         }
       })

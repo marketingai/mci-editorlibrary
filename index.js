@@ -206,6 +206,7 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
     // but the job response does. This can happen if we've seeded a job request
     this.logger.debug('Job Response Queue Helper', this.jobResponseQueueHelper.getQueue());
     if (this.jobResponseQueueHelper.exists(jobKey)) {
+      this.logger.debug("Fetching the job response because we found the jobKey", jobKey);
       return resolve(this.fetchJobResponse(this.jobResponseQueueHelper.get(jobKey)));
     }
 

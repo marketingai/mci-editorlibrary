@@ -171,7 +171,6 @@ MCIEditorLibrary.prototype.buildHTML = function () {
 
 MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
   this.dispatch.info('sendJobRequest.invoked', packet);
-  
 
   packet = {...packet, userKey: (packet.userKey || this.options.userKey)};
   const jobKey = packet.toHash();
@@ -201,6 +200,12 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
       const errMsg = 'Missing useCaseName property in packet';
       this.dispatch.failed('sendJobRequest', 'The job request failed due to missing useCaseName property in packet', 'missingProperty', errMsg);
       return reject('Missing useCaseName property in packet.');
+    }
+
+    // This handles the issue of the job request not existing in local storage
+    // but the job response does. This can happen if we've seeded a job request
+    if (this.jobResponseQueueHelper.exists(jobKey)) {
+      return resolve(this.fetchJobResponse(this.jobResponseQueueHelper.get(jobKey)));
     }
 
     axios({
@@ -235,7 +240,7 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
           const dataResp = {...data.job, jobId};
           const {jobKey} = dataResp;
           this.dispatch.success('fetchJobResponse', 'Job response fetched successfully', dataResp);
-          this.jobResponseQueueHelper.set(jobKey, jobId);
+          this.jobResponseQueueHelper.set(jobId, jobKey);
           return resolve(dataResp);
         }
       })

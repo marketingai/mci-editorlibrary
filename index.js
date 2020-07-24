@@ -1,8 +1,8 @@
 require('./keygen')();
 const axios = require('axios');
-window = (typeof window !== 'undefined' && window) || (new (require('jsdom')).JSDOM('<!DOCTYPE html>')).window;
-document = window.document;
-localStorage = (typeof localStorage !== 'undefined') ? localStorage : (new (require('node-localstorage')).LocalStorage('./nodeLSCache'));
+// window = (typeof window !== 'undefined' && window) || (new (require('jsdom')).JSDOM('<!DOCTYPE html>')).window;
+// document = window.document;
+// localStorage = (typeof localStorage !== 'undefined') ? localStorage : (new (require('node-localstorage')).LocalStorage('./nodeLSCache'));
 const coreEventLogs = require('./coreEventLogging');
 
 function MCIEditorLibrary () {

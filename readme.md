@@ -16,7 +16,7 @@
 npm install "git+https://github.com/marketingai/mci-editorlibrary.git"
 ```
 
-### Instantiate a new MCI EditorLibrary instance
+### Instantiate a new MCI Editor Library instance
 ```javascript
 const MCIEditorLibrary = require('MCIEditorLibrary');
 const mci = new MCIEditorLibrary({

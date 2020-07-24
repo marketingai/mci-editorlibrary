@@ -11,9 +11,7 @@
   "author": "Mintent - Shaun McKinnon",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2",
-    "jsdom": "^16.2.2",
-    "node-localstorage": "^2.1.6"
+    "axios": "^0.19.2"
   },
   "devDependencies": {
     "faker": "^4.1.0",

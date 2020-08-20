@@ -229,7 +229,7 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
 MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
   this.dispatch.info('fetchJobResponse.invoked', jobId);
 
-  let jobResponseEndPoint = `${this.options.apiEndpoint}/job/response/${jobId}`;
+  const jobResponseEndPoint = `${this.options.apiEndpoint}/job/response/${jobId}`;
 
   return new Promise((resolve, reject) => {
     const jobCheck = setInterval(() => {
@@ -249,6 +249,26 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
         return reject(error);
       });
     }, 5000);
+  });
+};
+
+MCIEditorLibrary.prototype.fetchAllCompletedJobIDsByUserkey = function (userkey) {
+  this.dispatch.info('fetchAllCompletedJobIDsByUserkey.invoked', userkey);
+  const jobResponseEndPoint = `${this.options.apiEndpoint}/jobs/${userkey}`;
+
+  return new Promise((resolve, reject) => {
+    axios(jobResponseEndPoint)
+    .then(({data}) => {
+      if (data.ids) {
+        this.dispatch.success('fetchAllCompletedJobIDsByUserkey', 'Job IDs by user key fetched successfully', data.ids);
+        return resolve(data.ids);
+      }
+      return resolve([]);
+    })
+    .catch(error => {
+      this.dispatch.failed('fetchAllCompletedJobIDsByUserkey', 'There was an error retrieving the job IDs by user key', 'error', error);
+      return reject(error);
+    })
   });
 };
 

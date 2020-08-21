@@ -1,4 +1,5 @@
 module.exports = mci => {
+  console.log("Core logs intialized");
   if (!mci) throw new Error('You are missing an instantiated SCACommunicator instance');
 
   const { jobLogsOnly, initLogsOnly } = ((mci.options && mci.options.loggingOptions) || {});
@@ -59,5 +60,9 @@ module.exports = mci => {
     mci.on('fetchJobResponse.cached.success', that => mci.logger.debug(that.message));
     mci.on('fetchJobResponse.success', that => mci.logger.debug(that.message));
     mci.on('fetchJobResponse.failed', that => mci.logger.error(that.message));
+
+    mci.on('fetchAllCompletedJobDataByUserkey.invoked.info', userkey => mci.logger.debug('Fetching completed job data invoked'));
+    mci.on('fetchAllCompletedJobDataByUserkey.success', that => mci.logger.debug(that.message));
+    mci.on('fetchAllCompletedJobDataByUserkey.failed', that => mci.logger.error(that.message));
   }
 };

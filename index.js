@@ -1,8 +1,12 @@
 require('./keygen')();
 const axios = require('axios');
-// window = (typeof window !== 'undefined' && window) || (new (require('jsdom')).JSDOM('<!DOCTYPE html>')).window;
-// document = window.document;
-// localStorage = (typeof localStorage !== 'undefined') ? localStorage : (new (require('node-localstorage')).LocalStorage('./nodeLSCache'));
+
+if (process.env.NODE_ENV === "node-test") {
+  window = (typeof window !== 'undefined' && window) || (new (require('jsdom')).JSDOM('<!DOCTYPE html>')).window;
+  document = window.document;
+  localStorage = (typeof localStorage !== 'undefined') ? localStorage : (new (require('node-localstorage')).LocalStorage('./nodeLSCache'));
+}
+
 const coreEventLogs = require('./coreEventLogging');
 
 function MCIEditorLibrary () {
@@ -252,21 +256,21 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
   });
 };
 
-MCIEditorLibrary.prototype.fetchAllCompletedJobIDsByUserkey = function (userkey) {
-  this.dispatch.info('fetchAllCompletedJobIDsByUserkey.invoked', userkey);
+MCIEditorLibrary.prototype.fetchAllCompletedJobDataByUserkey = function (userkey) {
+  this.dispatch.info('fetchAllCompletedJobDataByUserkey.invoked', userkey);
   const jobResponseEndPoint = `${this.options.apiEndpoint}/jobs/${userkey}`;
 
   return new Promise((resolve, reject) => {
     axios(jobResponseEndPoint)
     .then(({data}) => {
-      if (data.ids) {
-        this.dispatch.success('fetchAllCompletedJobIDsByUserkey', 'Job IDs by user key fetched successfully', data.ids);
-        return resolve(data.ids);
+      if (data.jobs) {
+        this.dispatch.success('fetchAllCompletedJobDataByUserkey', 'Job IDs by user key fetched successfully', data.jobs);
+        return resolve(data.jobs);
       }
       return resolve([]);
     })
     .catch(error => {
-      this.dispatch.failed('fetchAllCompletedJobIDsByUserkey', 'There was an error retrieving the job IDs by user key', 'error', error);
+      this.dispatch.failed('fetchAllCompletedJobDataByUserkey', 'There was an error retrieving the job IDs by user key', 'error', error);
       return reject(error);
     })
   });

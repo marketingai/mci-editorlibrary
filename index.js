@@ -176,7 +176,7 @@ MCIEditorLibrary.prototype.buildHTML = function () {
 MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
   packet = {...packet, userKey: (packet.userKey || this.options.userKey)};
   this.dispatch.info('sendJobRequest.invoked', packet);
-  
+
   const jobKey = packet.toHash();
 
   if (this.jobRequestQueueHelper.exists(jobKey)) {
@@ -190,7 +190,9 @@ MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
   const reqOpt = {
     userKey: packet.userKey,
     useCaseName: packet.useCaseName,
-    jobData: packet.jobData
+    jobData: packet.jobData,
+    platformType: packet.platformType,
+    title: packet.title
   };
 
   return new Promise((resolve, reject) => {

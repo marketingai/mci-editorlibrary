@@ -61,8 +61,8 @@ module.exports = mci => {
     mci.on('fetchJobResponse.success', that => mci.logger.debug(that.message));
     mci.on('fetchJobResponse.failed', that => mci.logger.error(that.message));
 
-    mci.on('fetchAllCompletedJobDataByUserkey.invoked.info', userkey => mci.logger.debug('Fetching completed job data invoked'));
-    mci.on('fetchAllCompletedJobDataByUserkey.success', that => mci.logger.debug(that.message));
-    mci.on('fetchAllCompletedJobDataByUserkey.failed', that => mci.logger.error(that.message));
+    mci.on('fetchAllCompletedJobDetailsByUserkey.invoked.info', userkey => mci.logger.debug('Fetching completed job data invoked'));
+    mci.on('fetchAllCompletedJobDetailsByUserkey.success', that => mci.logger.debug(that.message));
+    mci.on('fetchAllCompletedJobDetailsByUserkey.failed', that => mci.logger.error(that.message));
   }
 };

@@ -256,21 +256,21 @@ MCIEditorLibrary.prototype.fetchJobResponse = function (jobId) {
   });
 };
 
-MCIEditorLibrary.prototype.fetchAllCompletedJobDataByUserkey = function (userkey) {
-  this.dispatch.info('fetchAllCompletedJobDataByUserkey.invoked', userkey);
+MCIEditorLibrary.prototype.fetchAllCompletedJobDetailsByUserkey = function (userkey) {
+  this.dispatch.info('fetchAllCompletedJobDetailsByUserkey.invoked', userkey);
   const jobResponseEndPoint = `${this.options.apiEndpoint}/jobs/${userkey}`;
 
   return new Promise((resolve, reject) => {
     axios(jobResponseEndPoint)
     .then(({data}) => {
       if (data.jobs) {
-        this.dispatch.success('fetchAllCompletedJobDataByUserkey', 'Job IDs by user key fetched successfully', data.jobs);
+        this.dispatch.success('fetchAllCompletedJobDetailsByUserkey', 'Job IDs by user key fetched successfully', data.jobs);
         return resolve(data.jobs);
       }
       return resolve([]);
     })
     .catch(error => {
-      this.dispatch.failed('fetchAllCompletedJobDataByUserkey', 'There was an error retrieving the job IDs by user key', 'error', error);
+      this.dispatch.failed('fetchAllCompletedJobDetailsByUserkey', 'There was an error retrieving the job IDs by user key', 'error', error);
       return reject(error);
     })
   });

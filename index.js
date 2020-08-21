@@ -174,9 +174,9 @@ MCIEditorLibrary.prototype.buildHTML = function () {
 };
 
 MCIEditorLibrary.prototype.sendJobRequest = function (packet) {
-  this.dispatch.info('sendJobRequest.invoked', packet);
-
   packet = {...packet, userKey: (packet.userKey || this.options.userKey)};
+  this.dispatch.info('sendJobRequest.invoked', packet);
+  
   const jobKey = packet.toHash();
 
   if (this.jobRequestQueueHelper.exists(jobKey)) {

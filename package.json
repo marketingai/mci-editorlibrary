@@ -11,7 +11,7 @@
   "author": "Mintent - Shaun McKinnon",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.2"
+    "axios": "^0.21.1"
   },
   "devDependencies": {
     "faker": "^4.1.0",

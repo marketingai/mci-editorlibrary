@@ -16,7 +16,7 @@
   "devDependencies": {
     "faker": "^4.1.0",
     "jest": "^26.0.1",
-    "jsdom": "^16.4.0",
+    "jsdom": "^16.5.0",
     "node-localstorage": "^2.1.6"
   }
 }
